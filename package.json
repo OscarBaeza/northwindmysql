@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@sefailyasoz/react-carousel": "^1.1.1",
+    "axios": "^0.27.2",
+    "bootstrap": "^5.1.3",
+    "react": "^18.1.0",
+    "react-bootstrap": "^2.4.0",
+    "react-dom": "^18.1.0",
+    "reactstrap": "^9.0.2"
+  }
+}
