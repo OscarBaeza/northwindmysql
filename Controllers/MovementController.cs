@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,8 @@ using northwindmysql.Models;
 
 namespace northwindmysql.Controllers
 {
+    [Authorize(Policy = "RequireAdminRole")]
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class MovementsController : ControllerBase
@@ -82,11 +85,20 @@ namespace northwindmysql.Controllers
         [HttpPost]
         public async Task<ActionResult<Movement>> PostMovement(Movement movement)
         {
-          if (_context.Movements == null)
+            /*var movimiento = new Movement(){
+                MovementId=movementRequest.MovementId,
+                Date = movementRequest.Date,
+                OriginWarehouseId = movementRequest.OriginWarehouseId,
+                Type = movementRequest.Type,
+                CompanyId = movementRequest.CompanyId,
+                EmployeeId = movementRequest.EmployeeId
+            };*/
+            if (_context.Movements == null)
           {
-              return Problem("Entity set 'NorthwindContext.Movements'  is null.");
+              return Problem("Entity set 'ApplicationDbContext.Movements'  is null.");
           }
             _context.Movements.Add(movement);
+            
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetMovement", new { id = movement.MovementId }, movement);

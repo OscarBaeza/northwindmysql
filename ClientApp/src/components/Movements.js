@@ -2,7 +2,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import React, {Component} from "react";
 import { Container, Table, Button, Modal, ModalBody, 
     ModalHeader, ModalFooter, Form, FormGroup, Label, Input } from 'reactstrap';
-import authService from './api-authorization/AuthorizeService'
+import authService from './api-authorization/AuthorizeService';
+import axios from "axios";
 
 export default class Movements extends React.Component
 {
@@ -11,10 +12,10 @@ export default class Movements extends React.Component
         modalActualizar: false,
         modalInsertar: false,
         form: {
-          movementId: "",
-          date:"",
+          movementId: 0,
+          date: "",
           originWarehouseId: "",
-          targetWarehouseId: "",
+          targetWarehouseId: null,
           type: "",
           companyId: "",
           employeeId: "",
@@ -72,13 +73,145 @@ export default class Movements extends React.Component
           this.setState({ modalInsertar: !v });
         }
 
+        handleChange = (e) => {
+          this.setState({
+            form: {
+              ...this.state.form,
+              [e.target.name]: e.target.value,
+            },
+          });
+        };
+
+        
+
+        create = () => {
+          var data = { ...this.state.form };
+          const movement = {
+              MovementId: 0,
+              Date: data.date,
+              OriginWarehouseId: data.originWarehouseId,
+              TargetWarehouseId: data.targetWarehouseId,
+              Type: data.type,
+              CompanyId: data.companyId,
+              EmployeeId: data.employeeId,
+          };
+          console.log(movement);
+          const options = {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(movement)
+          };
+  
+          fetch('api/Movements', options)
+              .then(
+                  (response) =>  {return response.status;}
+              ).then(
+                  (code) => {
+                      if(code==201){
+                          console.log(code);
+                          
+          
+                          this.populateMovementData();
+                          this.setState({ modalInsertar: false });                                       
+                         
+                          
+                      }else{
+                        console.log(code);
+                      }
+                  }
+              );
+          
+      }
+
+      edit = () => {
+    
+        var data = { ...this.state.form };
+          const movement = {
+              MovementId: data.movementId,
+              Date: data.date,
+              OriginWarehouseId: data.originWarehouseId,
+              TargetWarehouseId: data.targetWarehouseId,
+              Type: data.type,
+              CompanyId: data.companyId,
+              EmployeeId: data.employeeId,
+          };
+          
+
+        const options = {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(movement)
+        };
+        console.log(movement);
+        fetch('api/Movements/'+movement.MovementId, options)
+            .then(
+                (response) =>  {return response.status;      }
+            ).then(
+                (code) => {
+                    if(code==204){
+                        console.log(code);
+                        
+                        this.populateMovementData();
+                        this.cerrarModalActualizar();                                     
+                        
+                        
+                    }
+                }
+            );
+        
+    }
+
+
+    eliminar = async (dato) => {
+      var opcion = window.confirm(
+        "Eliminar ? " + dato.movementId
+      );
+      console.log(dato);
+      if (opcion == true) {
+        const token = await authService.getAccessToken();
+        const response = await fetch(`api/Movements/${dato.movementId}`, {
+          headers: !token ? {} : { Authorization: `Bearer ${token}` },
+          method: "DELETE",
+        });
+        console.log(response);
+        if (response.status != 403) {
+          this.populateMovementData();
+        } else {
+          // console.log("Sin autorizacion");
+        }
+        this.setState({ modalActualizar: false });
+      }
+    };
+
+
+
+
+
+
+
         render(){
           return(
           <div>
           <Container>
               <h1>Movimientos</h1>
-              <Button color="success" onClick={() => this.mostrarModalInsertar()}
-              >Agregar</Button>
+              {this.state.isAdmin ? (
+            <>
+              <Button
+                color="success"
+                onClick={() => this.mostrarModalInsertar()}
+              >
+                Crear
+              </Button>
+            </>
+          ) : (
+            <></>
+          )}
+          <br />
+          <br />
               <Table hover>
               <thead>
                 <tr>
@@ -92,6 +225,13 @@ export default class Movements extends React.Component
  
                   <th>Id compañia</th>
                   <th>Id empleado</th>
+                  {this.state.isAdmin?(
+                    <th>Accion</th>
+                  ):(
+                    <>
+                    </>
+                  )}
+                  
                 </tr>
               </thead>
               <tbody>
@@ -105,10 +245,18 @@ export default class Movements extends React.Component
                     <td>{dato.type}</td>
                     <td align="center">{dato.companyId}</td>
                     <td>{dato.employeeId}</td>
-                    <td><Button color="primary" onClick={() => this.mostrarModalActualizar(dato)}
-                    >Edit</Button></td>
-                    <td><Button color="danger" onClick={() => this.eliminar(dato)}
-                    >X</Button></td>
+                    {this.state.isAdmin ? (
+                      <>
+                      <td><Button color="primary" onClick={() => this.mostrarModalActualizar(dato)}
+                      >Edit</Button></td>
+                      <td><Button color="danger" onClick={() => this.eliminar(dato)}
+                      >X</Button></td>
+                      </>
+                    ):(
+                      <>
+                      </>
+                    )}
+                    
                     
                   </tr>
                 ))}
@@ -134,7 +282,7 @@ export default class Movements extends React.Component
                   className="form-control"
                   readOnly
                   type="text"
-                  value={this.state.form.companyId}
+                  value={this.state.form.movementId}
                 />
               </FormGroup>
   
@@ -142,7 +290,7 @@ export default class Movements extends React.Component
                 <label>Fecha:</label>
                 <input
                   className="form-control"
-                  name="lastName"
+                  name="date"
                   type="text"
                   onChange={this.handleChange}
                   value={this.state.form.date}
@@ -153,7 +301,7 @@ export default class Movements extends React.Component
                 <label>Almacen Origen Id:</label>
                 <input
                   className="form-control"
-                  name="firstName"
+                  name="originWarehouseId"
                   type="text"
                   onChange={this.handleChange}
                   value={this.state.form.originWarehouseId}
@@ -163,7 +311,7 @@ export default class Movements extends React.Component
                 <label>Almacen Destino Id:</label>
                 <input
                   className="form-control"
-                  name="hireDate"
+                  name="targetWarehouseId"
                   type="text"
                   onChange={this.handleChange}
                   value={this.state.form.targetWarehouseId}
@@ -174,7 +322,7 @@ export default class Movements extends React.Component
                 <label>Tipo:</label>
                 <input
                   className="form-control"
-                  name="address"
+                  name="type"
                   type="text"
                   onChange={this.handleChange}
                   value={this.state.form.type}
@@ -185,7 +333,7 @@ export default class Movements extends React.Component
                 <label>Id Compañia:</label>
                 <input
                   className="form-control"
-                  name="homePhone"
+                  name="companyId"
                   type="text"
                   onChange={this.handleChange}
                   value={this.state.form.companyId}
@@ -196,7 +344,7 @@ export default class Movements extends React.Component
                 <label>Id Empleado:</label>
                 <input
                   className="form-control"
-                  name="email"
+                  name="employeeId"
                   type="text"
                   onChange={this.handleChange}
                   value={this.state.form.employeeId}
@@ -209,7 +357,7 @@ export default class Movements extends React.Component
             <ModalFooter>
               <Button
                 color="primary"
-                onClick={() => this.editar(this.state.form)}
+                onClick={() => this.edit()}
               >
                 Editar
               </Button>
@@ -230,11 +378,21 @@ export default class Movements extends React.Component
             </ModalHeader>
   
             <ModalBody>
+            <FormGroup>
+                <label>Fecha</label>
+                <input
+                  className="form-control"
+                  name="date"
+                  type="text"
+                  onChange={this.handleChange}
+                />
+              </FormGroup>
+
               <FormGroup>
                 <label>Almacen Origen Id:</label>
                 <input
                   className="form-control"
-                  name="lastName"
+                  name="originWarehouseId"
                   type="text"
                   onChange={this.handleChange}
                 />
@@ -244,7 +402,7 @@ export default class Movements extends React.Component
                 <label>Almacen Destino Id:</label>
                 <input
                   className="form-control"
-                  name="firstName"
+                  name="targetWarehouseId"
                   type="text"
                   onChange={this.handleChange}
                 />
@@ -253,7 +411,7 @@ export default class Movements extends React.Component
                 <label>Tipo:</label>
                 <input
                   className="form-control"
-                  name="hireDate"
+                  name="type"
                   type="text"
                   onChange={this.handleChange}
                 />
@@ -263,7 +421,7 @@ export default class Movements extends React.Component
                 <label>Id Compañia:</label>
                 <input
                   className="form-control"
-                  name="address"
+                  name="companyId"
                   type="text"
                   onChange={this.handleChange}
                 />
@@ -273,7 +431,7 @@ export default class Movements extends React.Component
                 <label>Id Empleado:</label>
                 <input
                   className="form-control"
-                  name="homePhone"
+                  name="employeeId"
                   type="text"
                   onChange={this.handleChange}
                 />
@@ -285,7 +443,7 @@ export default class Movements extends React.Component
             </ModalBody>
   
             <ModalFooter>
-              <Button color="primary" onClick={() => this.insertar()}>
+              <Button color="primary" onClick={() => this.create()}>
                 Insertar
               </Button>
               <Button

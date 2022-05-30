@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace northwindmysql.Models
 {
@@ -17,14 +18,18 @@ namespace northwindmysql.Models
         public DateTime? HireDate { get; set; }
         public string? Address { get; set; }
         public string? HomePhone { get; set; }
+        [JsonIgnore]
         public int? ReportsTo { get; set; }
         public string? Email { get; set; }
         public string? Password { get; set; }
-        public int CompanyId { get; set; }
-
-        public virtual Company Company { get; set; } = null!;
+        public int? CompanyId { get; set; }
+        [JsonIgnore]
+        public virtual Company? Company { get; set; } = null!;
+        [JsonIgnore]
         public virtual Employee? ReportsToNavigation { get; set; }
-        public virtual ICollection<Employee> InverseReportsToNavigation { get; set; }
-        public virtual ICollection<Movement> Movements { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<Employee>? InverseReportsToNavigation { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<Movement>? Movements { get; set; }
     }
 }

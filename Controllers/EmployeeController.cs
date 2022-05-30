@@ -9,12 +9,15 @@ using Microsoft.AspNetCore.Cors;
 
 namespace northwindmysql.Controllers
 {
-    [Authorize]
+    //[Authorize(Policy = "RequireAdminRole")]
+    //[Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class EmployeesController : ControllerBase
     {
+
         private readonly NorthwindContext _context;
+        
 
         public EmployeesController(NorthwindContext context)
         {
@@ -25,7 +28,7 @@ namespace northwindmysql.Controllers
         [HttpGet]
         public IEnumerable<Employee> GetEmployees()
         {
-         
+            
             return  _context.Employees.ToArray();;
         }
         [HttpGet]
@@ -96,8 +99,9 @@ namespace northwindmysql.Controllers
         // PUT: api/Employees/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutEmployee(int id, Employee employee)
+        public async Task<IActionResult> PutEmployee(int id,Employee employee)
         {
+            
             if (id != employee.EmployeeId)
             {
                 return BadRequest();
@@ -126,15 +130,27 @@ namespace northwindmysql.Controllers
 
         // POST: api/Employees
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
+   
+       
         [HttpPost]
-        public async Task<ActionResult<Employee>> PostEmployee(Employee employee)
+        public async Task<ActionResult<Employee>> PostEmployee(Employee employeeRequest)
         {
-          if (_context.Employees == null)
-          {
-              return Problem("Entity set 'NorthwindContext.Employees'  is null.");
-          }
+            var employee = new Employee()
+            {
+                EmployeeId = employeeRequest.EmployeeId,
+                LastName = employeeRequest.LastName,
+                FirstName = employeeRequest.FirstName,
+                HireDate = employeeRequest.HireDate,
+                Address = employeeRequest.Address,
+                HomePhone = employeeRequest.HomePhone,
+                Email = employeeRequest.Email,
+                Password = employeeRequest.Password,
+                CompanyId = 1
+            };
             _context.Employees.Add(employee);
             await _context.SaveChangesAsync();
+
 
             return CreatedAtAction("GetEmployee", new { id = employee.EmployeeId }, employee);
         }

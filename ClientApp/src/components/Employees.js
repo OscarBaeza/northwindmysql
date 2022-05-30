@@ -3,7 +3,7 @@ import React, {Component} from "react";
 import { Container, Table, Button, Modal, ModalBody, 
     ModalHeader, ModalFooter, Form, FormGroup, Label, Input } from 'reactstrap';
 import authService from './api-authorization/AuthorizeService'
-
+import axios from "axios";
 
 
 export default class Empleados extends React.Component
@@ -21,9 +21,17 @@ export default class Empleados extends React.Component
           homePhone: "",
           email: "",
           password: "",
+          companyId:1,
         },
         isAdmin: false,
+      
       };
+
+      componentDidMount(){
+     
+        this.populateEmployeeData();
+        }
+    
 
       async populateEmployeeData() {
         const token = await authService.getAccessToken();
@@ -36,43 +44,198 @@ export default class Empleados extends React.Component
         authService.getUser().then((u) => {
           const isAdmin = authService.isAdmin(u);
           this.setState({ isAdmin: isAdmin });
+          console.log(isAdmin);
         });
+
+
       }
-    
-    componentDidMount(){
-     
-    this.populateEmployeeData();
+
+      mostrarModalActualizar = (dato) => {
+        this.setState({
+          form: dato,
+          modalActualizar: true,
+        });
+      };
+
+      cerrarModalActualizar = () => {
+        this.setState({ modalActualizar: false });
+      };
+
+      toggleModalActualizar(v) {
+        this.setState({ modalActualizar: !v });
+      }
+
+      mostrarModalInsertar = () => {
+        this.setState({
+          modalInsertar: true,
+        });
+      };
+
+      cerrarModalInsertar = () => {
+        this.setState({ modalInsertar: false });
+      };
+
+      toggleModalInsertar(v) {
+        this.setState({ modalInsertar: !v });
+      }
+
+      handleChange = (e) => {
+        this.setState({
+          form: {
+            ...this.state.form,
+            [e.target.name]: e.target.value,
+          },
+        });
+      };
+
+      insertar = async () => {
+        var data = { ...this.state.form };
+        const employee = {
+          employeeId: 0,
+            lastName: data.lastName,
+            firstName: data.firstName,
+            hireDate: data.hireDate,
+            address: data.address,
+            homePhone: data.homePhone,
+            email: data.email,
+            password: data.password,
+            companyId:1,
+
+        };
+        console.log(employee);
+        const token = await authService.getAccessToken();
+        const headers = !token ? {} : { Authorization: `Bearer ${token}` };
+        const response = await axios.post(
+          `api/employees`,
+          {
+            employeeId: 0,
+            lastName: data.lastName,
+            firstName: data.firstName,
+            hireDate: data.hireDate,
+            address: data.address,
+            homePhone: data.homePhone,
+            email: data.email,
+            password: data.password,
+            companyId: 1,
+          },
+          headers
+        );
+        
+        console.log(response);
+        if (response.status != 403) {
+          this.populateEmployeeData();
+        } else {
+          // console.log("Sin autorizacion");
+        }
+        this.setState({ modalInsertar: false });
+      };
+
+      create = async () => {
+        var data = { ...this.state.form };
+        const employee = {
+          employeeId: 0,
+            lastName: data.lastName,
+            firstName: data.firstName,
+            hireDate: data.hireDate,
+            address: data.address,
+            homePhone: data.homePhone,
+            email: data.email,
+            password: data.password,
+            companyId:1,
+        };
+        const options = {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(employee)
+        };
+
+       await fetch('/api/employees', options)
+            .then(
+                (response) =>  {return response.status;      }
+            ).then(
+                (code) => {
+                    if(code==201){
+                        console.log(code);
+                        console.log(employee);
+                        this.componentDidMount();
+                        
+                    }else{
+                      console.log(code);
+                    }
+                }
+            );
+            this.setState({ modalInsertar: false });
+        
     }
 
-    mostrarModalActualizar = (dato) => {
-      this.setState({
-        form: dato,
-        modalActualizar: true,
-      });
+    //eliminar
+
+    eliminar = async (dato) => {
+      var opcion = window.confirm(
+        "Eliminar ? " + dato.employeeId
+      );
+      if (opcion == true) {
+        const token = await authService.getAccessToken();
+        const response = await fetch(`api/employees/${dato.employeeId}`, {
+          headers: !token ? {} : { Authorization: `Bearer ${token}` },
+          method: "DELETE",
+        });
+        console.log(response);
+        if (response.status != 403) {
+          this.populateEmployeeData();
+        } else {
+          // console.log("Sin autorizacion");
+        }
+        this.setState({ modalActualizar: false });
+      }
     };
-  
-    cerrarModalActualizar = () => {
+
+    //Editar
+
+    editar = async () => {
+      var data = { ...this.state.form };
+        const employee = {
+           employeeId: data.employeeId,
+            lastName: data.lastName,
+            firstName: data.firstName,
+            hireDate: data.hireDate,
+            address: data.address,
+            homePhone: data.homePhone,
+            email: data.email,
+            password: data.password,
+            companyId:1,
+        };
+      const token = await authService.getAccessToken();
+      const headers = !token ? {} : { Authorization: `Bearer ${token}` };
+      const response = await axios.put(
+        `/api/employees/${employee.employeeId}`,
+        {
+          employeeId: data.employeeId,
+          lastName: data.lastName,
+          firstName: data.firstName,
+          hireDate: data.hireDate,
+          address: data.address,
+          homePhone: data.homePhone,
+          email: data.email,
+          password: data.password,
+          companyId:1,
+        },
+        headers
+      );
+      console.log(response);
+      if (response.status != 403) {
+        this.populateEmployeeData();
+      } else {
+        // console.log("Sin autorizacion");
+      }
       this.setState({ modalActualizar: false });
     };
   
-    toggleModalActualizar(v) {
-      this.setState({ modalActualizar: !v });
-    }
+    
   
-    mostrarModalInsertar = () => {
-      this.setState({
-        modalInsertar: true,
-      });
-    };
-  
-    cerrarModalInsertar = () => {
-      this.setState({ modalInsertar: false });
-    };
-  
-    toggleModalInsertar(v) {
-      this.setState({ modalInsertar: !v });
-    }
-
+    
     
     
     render(){
@@ -80,8 +243,14 @@ export default class Empleados extends React.Component
         <div>
         <Container>
             <h1>Empleados</h1>
-            <Button color="success" onClick={() => this.mostrarModalInsertar()}
-            >Agregar</Button>
+            {this.state.isAdmin?(
+              <Button color="success" onClick={() => this.mostrarModalInsertar()}
+              >Agregar</Button>
+            ):(
+              <>
+              </>
+            )}
+            
             <Table hover>
             <thead>
               <tr>
@@ -94,7 +263,13 @@ export default class Empleados extends React.Component
                 <th>Dirección</th>
                 <th>Telefono</th>
                 <th>Correo</th>
-                <th>Accion</th>
+                {this.state.isAdmin?(
+                  <th>Accion</th>
+                ):(
+                  <></>
+                )}
+                
+                
               </tr>
             </thead>
             <tbody>
@@ -107,10 +282,17 @@ export default class Empleados extends React.Component
                   <td>{dato.address}</td>
                   <td>{dato.homePhone}</td>
                   <td>{dato.email}</td>
-                  <td><Button color="primary" onClick={() => this.mostrarModalActualizar(dato)}
-                  >Edit</Button></td>
-                  <td><Button color="danger" onClick={() => this.eliminar(dato)}
-                  >X</Button></td>
+                  {this.state.isAdmin ? (
+                    <>
+                    <td><Button color="primary" onClick={() => this.mostrarModalActualizar(dato)}
+                    >Edit</Button></td>
+                    <td><Button color="danger" onClick={() => this.eliminar(dato)}
+                    >X</Button></td>
+                    </>
+                  ):(
+                    <></>
+                  )}
+                  
                   
                 </tr>
               ))}
@@ -220,7 +402,7 @@ export default class Empleados extends React.Component
           <ModalFooter>
             <Button
               color="primary"
-              onClick={() => this.editar(this.state.form)}
+              onClick={() => this.editar()}
             >
               Editar
             </Button>

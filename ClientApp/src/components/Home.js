@@ -11,7 +11,7 @@ export class Home extends Component {
     return (
       <div>
         <h1>NWIND</h1>
-        {datos}
+        
         
         <p>Bienvenidos a nuestro inventario</p>
         
