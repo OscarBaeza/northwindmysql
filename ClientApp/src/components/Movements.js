@@ -1,26 +1,40 @@
 import "bootstrap/dist/css/bootstrap.min.css";
+import Products from "./Products";
 import React, {Component} from "react";
 import { Container, Table, Button, Modal, ModalBody, 
     ModalHeader, ModalFooter, Form, FormGroup, Label, Input } from 'reactstrap';
 import authService from './api-authorization/AuthorizeService';
 import axios from "axios";
+import { FormSelect } from "react-bootstrap";
 
 export default class Movements extends React.Component
 {
     state = {
+        dataWare:[],
         data: [],
         modalActualizar: false,
         modalInsertar: false,
+        modalProductos:false,
         form: {
           movementId: 0,
           date: "",
           originWarehouseId: "",
           targetWarehouseId: null,
-          type: "",
+          type: "VENTA",
           companyId: "",
           employeeId: "",
         },
+        formWare:{
+          warehouseId:"",
+          productId:"",
+          unitsInStock:"",
+          unitsonOrder:"",
+          reorderLevel:"",
+          discontinued:"",
+        }
+        ,
         isAdmin: false,
+        traspaso:false,
       };
 
       async populateMovementData(){
@@ -39,9 +53,24 @@ export default class Movements extends React.Component
         });
       }
 
+      async populateWareData(){
+        const token = await authService.getAccessToken();
+        const response = await fetch('/api/Warehouseproducts', {
+          headers: !token ? {} : { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        this.setState({ dataWare:data})
+        console.log(data)
+        ;
+
+        
+      }
+
+
         componentDidMount(){
      
         this.populateMovementData();
+        this.populateWareData();
         }
     
         mostrarModalActualizar = (dato) => {
@@ -58,6 +87,10 @@ export default class Movements extends React.Component
         toggleModalActualizar(v) {
           this.setState({ modalActualizar: !v });
         }
+
+        toggleModalProductos(v){
+          this.setState({modalProductos:!v})
+        }
       
         mostrarModalInsertar = () => {
           this.setState({
@@ -68,6 +101,13 @@ export default class Movements extends React.Component
         cerrarModalInsertar = () => {
           this.setState({ modalInsertar: false });
         };
+        mostrarModalProductos =() =>{
+          this.setState({modalProductos:true});
+        }
+        cerrarModalProductos =() =>{
+          this.setState({modalProductos:false});
+          this.setState({traspaso:false});
+        }
       
         toggleModalInsertar(v) {
           this.setState({ modalInsertar: !v });
@@ -77,6 +117,14 @@ export default class Movements extends React.Component
           this.setState({
             form: {
               ...this.state.form,
+              [e.target.name]: e.target.value,
+            },
+          });
+        };
+        handleChangeProducts = (e) => {
+          this.setState({
+            formWare: {
+              ...this.state.formWare,
               [e.target.name]: e.target.value,
             },
           });
@@ -111,12 +159,20 @@ export default class Movements extends React.Component
                   (code) => {
                       if(code==201){
                           console.log(code);
-                          
-          
                           this.populateMovementData();
-                          this.setState({ modalInsertar: false });                                       
-                         
-                          
+                          this.setState({modalInsertar: false });
+                          switch(movement.Type){
+                            case 'VENTA':
+                              this.mostrarModalProductos();
+                              break;
+                            case 'TRASPASO':
+                              this.setState({traspaso: true });
+                              this.mostrarModalProductos();
+                              break;
+                            case 'COMPRA':
+                              this.mostrarModalProductos();
+                          }
+
                       }else{
                         console.log(code);
                       }
@@ -186,6 +242,108 @@ export default class Movements extends React.Component
         this.setState({ modalActualizar: false });
       }
     };
+
+
+    restarAlmacen = (idProducto,idWarehouse,cantidad)=>{
+      console.log(idWarehouse);
+        console.log(cantidad);
+        var producto = this.state.dataWare.filter(function(product){return product.productId==idProducto&&product.warehouseId==idWarehouse})
+        var pro = producto[0];
+        console.log(pro);
+        const product={
+         WarehouseID:pro.warehouseId,
+         ProductID:pro.productId,
+         UnitsInStock:pro.unitsInStock-cantidad,
+         UnitsOnOrder:pro.unitsOnOrder,
+         ReorderLevel:pro.reorderLevel,
+         Discontinued:pro.discontinued,
+        };
+        console.log(product);
+   
+        const options = {
+         method: "PUT",
+         headers: {
+           "Content-Type": "application/json"
+         },
+         body: JSON.stringify(product)
+         };
+         
+         fetch('/api/Warehouseproducts/'+product.WarehouseID, options)
+             .then(
+                 (response) =>  {return response.status;      }
+             ).then(
+                 (code) => {
+                     if(code==204){
+                         console.log(code);
+                         
+                         this.cerrarModalProductos();
+                     }
+                 }
+             );
+    }
+    sumarAlmacen = (idProducto,idWarehouse, cantidad)=>{
+      console.log(idWarehouse);
+        console.log(cantidad);
+        var producto = this.state.dataWare.filter(function(product){return product.productId==idProducto&&product.warehouseId==idWarehouse})
+        var pro = producto[0];
+        console.log(pro);
+        const product={
+         WarehouseID:pro.warehouseId,
+         ProductID:pro.productId,
+         UnitsInStock:pro.unitsInStock+parseInt(cantidad),
+         UnitsOnOrder:pro.unitsOnOrder,
+         ReorderLevel:pro.reorderLevel,
+         Discontinued:pro.discontinued,
+        };
+        console.log(product);
+   
+        const options = {
+         method: "PUT",
+         headers: {
+           "Content-Type": "application/json"
+         },
+         body: JSON.stringify(product)
+         };
+         
+         fetch('/api/Warehouseproducts/'+product.WarehouseID, options)
+             .then(
+                 (response) =>  {return response.status;      }
+             ).then(
+                 (code) => {
+                     if(code==204){
+                         console.log(code);
+                         
+                         this.cerrarModalProductos();
+                     }
+                 }
+             );
+    }
+
+
+
+
+    editarAlmacen = (idProducto,idWarehouse,cantidad,idtarget)=>{
+
+     switch(this.state.form.type){
+      case 'VENTA':
+        this.restarAlmacen(idProducto,idWarehouse,cantidad);
+        break;
+      case 'COMPRA':
+        this.sumarAlmacen(idProducto,idWarehouse,cantidad);
+        
+        break;
+      case 'TRASPASO':
+        this.restarAlmacen(idProducto,idWarehouse,cantidad);
+        this.sumarAlmacen(idProducto,idtarget,cantidad);
+
+        break;
+     }
+
+    
+     
+
+    }
+    
 
 
 
@@ -408,14 +566,15 @@ export default class Movements extends React.Component
                 />
               </FormGroup>
               <FormGroup>
-                <label>Tipo:</label>
-                <input
-                  className="form-control"
-                  name="type"
-                  type="text"
-                  onChange={this.handleChange}
-                />
+                <label>Tipo</label>
+                <Input type="select" name="type" id="exampleSelect" onChange={this.handleChange}>
+                  <option>VENTA</option>
+                  <option>COMPRA</option>
+                  <option>TRASPASO</option>
+                </Input>
               </FormGroup>
+              
+              
   
               <FormGroup>
                 <label>Id Compañia:</label>
@@ -449,6 +608,82 @@ export default class Movements extends React.Component
               <Button
                 className="btn btn-danger"
                 onClick={() => this.cerrarModalInsertar()}
+              >
+                Cancelar
+              </Button>
+            </ModalFooter>
+          </Modal> 
+
+          <Modal
+            isOpen={this.state.modalProductos}
+            toggle={() => this.toggleModalProductos(this.state.modalProductos)}
+          >
+            <ModalHeader>
+              <div>
+                <h3>Producto del movimiento</h3>
+              </div>
+            </ModalHeader>
+  
+            <ModalBody>
+              {this.state.traspaso?(
+                <>
+                <FormGroup>
+                <label>Almacen Origen</label>
+                <input
+                  className="form-control"
+                  name="originWarehouseId"
+                  type="text"
+                  onChange={this.handleChange}
+                  value={this.state.form.originWarehouseId}
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <label>Almacen Destino</label>
+                <input
+                  className="form-control"
+                  name="tarjetWarehouseId"
+                  type="text"
+                  onChange={this.handleChange}
+                  value={this.state.form.targetWarehouseId}
+                />
+              </FormGroup>
+                </>
+              ):(
+                <>
+                </>
+              )}
+            
+                    
+              
+              <FormGroup>
+                <label>Id del producto:</label>
+                <input
+                  className="form-control"
+                  name="productId"
+                  type="text"
+                  onChange={this.handleChangeProducts}
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Cantidad:</label>
+                <input
+                  className="form-control"
+                  name="unitsInStock"
+                  type="text"
+                  onChange={this.handleChangeProducts}
+                />
+              </FormGroup>
+  
+            </ModalBody>
+  
+            <ModalFooter>
+              <Button color="primary" onClick={() => this.editarAlmacen(this.state.formWare.productId,this.state.form.originWarehouseId,this.state.formWare.unitsInStock,this.state.form.targetWarehouseId)}>
+                Guardar
+              </Button>
+              <Button
+                className="btn btn-danger"
+                onClick={() => this.cerrarModalProductos()}
               >
                 Cancelar
               </Button>

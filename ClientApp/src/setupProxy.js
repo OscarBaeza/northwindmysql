@@ -13,7 +13,9 @@ const context =  [
   "/ApplyDatabaseMigrations",
   "/_framework",
   "/api/employees",
-  "/api/Movements"
+  "/api/Movements",
+  "/api/Products",
+  "/api/Warehouseproducts"
 ];
 
 module.exports = function(app) {

@@ -6,6 +6,7 @@ import { FetchData } from './components/FetchData';
 import { Counter } from './components/Counter';
 import Empleados from './components/Employees.js';
 import Movements from './components/Movements';
+import Products from './components/Products';
 import AuthorizeRoute from './components/api-authorization/AuthorizeRoute';
 import ApiAuthorizationRoutes from './components/api-authorization/ApiAuthorizationRoutes';
 import { ApplicationPaths } from './components/api-authorization/ApiAuthorizationConstants';
@@ -25,6 +26,7 @@ export default class App extends Component {
         <AuthorizeRoute path='/fetch-data' component={FetchData} />
         <AuthorizeRoute path='/empleados' exact component={Empleados}/>
         <AuthorizeRoute path='/movimientos' exact component={Movements}/>
+        
         <Route path={ApplicationPaths.ApiAuthorizationPrefix} component={ApiAuthorizationRoutes} />
       </Layout>
     );

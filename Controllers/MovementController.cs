@@ -11,8 +11,8 @@ using northwindmysql.Models;
 
 namespace northwindmysql.Controllers
 {
-    [Authorize(Policy = "RequireAdminRole")]
-    [Authorize]
+    //[Authorize(Policy = "RequireAdminRole")]
+    //[Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class MovementsController : ControllerBase

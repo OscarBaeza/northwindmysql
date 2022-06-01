@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace northwindmysql.Models
 {
@@ -11,8 +12,10 @@ namespace northwindmysql.Models
         public short UnitsOnOrder { get; set; }
         public short ReorderLevel { get; set; }
         public sbyte Discontinued { get; set; }
-
-        public virtual Product Product { get; set; } = null!;
-        public virtual Warehouse Warehouse { get; set; } = null!;
+        
+        [JsonIgnore]
+        public virtual Product? Product { get; set; } = null!;
+        [JsonIgnore]
+        public virtual Warehouse? Warehouse { get; set; } = null!;
     }
 }
